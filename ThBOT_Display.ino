@@ -87,6 +87,7 @@ enum {
   STATE_MOVE_BACKWARD,
   STATE_TURN_RIGTH,
   STATE_TURN_LEFT,
+  STATE_ODOM_PARAMS,
 };
 
 enum {
@@ -179,16 +180,18 @@ const char TestsMenuText[] PROGMEM = "TESTS";
 const char ArretUrgenceText[] PROGMEM = "Arret Urgence";
 const char MoteursText[] PROGMEM = "Moteurs";
 const char EncodeursText[] PROGMEM = "Encodeurs";
+const char OdometrieText[] PROGMEM = "Odometrie";
 
 void ActTestArretUrgence(void);
 void ActTestEncodeurs(void);
+void ActTestOdometrie(void);
 
 const t_Menu st_TestsMenu PROGMEM = {
   .MenuEntry = {
     { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*0,  ArretUrgenceText,   BLUE,    WHITE, ActTestArretUrgence,   NULL},
     { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*1,  MoteursText,        JJCOLOR, WHITE, NULL,                  &st_TestsMoteursMenu},
     { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*2,  EncodeursText,      BLUE,    WHITE, ActTestEncodeurs,      NULL},
-    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*3,  EmptyText,          BLACK,   GREEN, NULL,NULL},
+    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*3,  OdometrieText,      JJCOLOR, WHITE, ActTestOdometrie,      NULL},
     { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*4,  EmptyText,          BLACK,   GREEN, NULL,NULL},
     { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*5,  EmptyText,          BLACK,   GREEN, NULL,NULL},
     { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*6,  EmptyText,          BLACK,   GREEN, NULL,NULL},
@@ -645,12 +648,78 @@ void ActTestEncodeurs(void)
     }
     else
     {
-      RespAvailable = WaitResponse(BufferResp, 36);
+      RespAvailable = WaitResponse(BufferResp, 11+25);
     
       if (RespAvailable > 0)
       {
         DisplayTestEncodeurs(BufferResp);
 
+        memset(BufferResp, 0, 64);
+        RespBuffIndex = 0;
+
+        /* Wait 2s before requesting a new read */
+        u16_SleepLoop = 20;
+      }
+    }
+    uc_StickState = CheckJoystick();
+  }while(uc_StickState != KEY_LEFT);
+
+  SendModeTests();
+  DisplayMenu();
+}
+
+void DisplayTestOdometrie(char * RespBuff)
+{
+  /* RSP:04:07:0000000.01:0001040.01:0000137.24:0000.78345
+   * RSP:04:07:0000.78345:0000137.24:0000000.01:0001040.01
+   */
+  RespBuff[3] = '\0';
+  RespBuff[6] = '\0';
+  RespBuff[9] = '\0';
+  RespBuff[20] = '\0';
+  RespBuff[31] = '\0';
+  RespBuff[42] = '\0';
+  RespBuff[53] = '\0';
+
+  tft.fillScreen(BLACK);
+  tft.setCursor(0, 50);
+  tft.setTextColor(GREEN);
+  tft.setTextSize(4);
+  TftPrintf("PosX  : %s\n", &RespBuff[10]);
+  TftPrintf("PosY  : %s\n", &RespBuff[21]);
+  TftPrintf("Teta  : %s\n", &RespBuff[32]);
+  TftPrintf("Speed : %s\n", &RespBuff[43]);
+}
+
+void ActTestOdometrie(void)
+{
+  char BufferResp[64];
+  int  RespAvailable;
+  uint16_t u16_SleepLoop = 1;
+
+  memset(BufferResp, 0, 64);
+  RespBuffIndex = 0;
+  
+  tft.fillScreen(BLACK);
+  DisplayTestOdometrie(BufferResp);
+  
+  do
+  {
+    if (u16_SleepLoop > 0)
+    {
+      u16_SleepLoop--;
+      if (u16_SleepLoop==0)
+        Printf("CMD:%2.2d:%2.2d\n", MODE_TESTS, STATE_ODOM_PARAMS);
+      delay(100);
+    }
+    else
+    {
+      RespAvailable = WaitResponse(BufferResp, 11+43);
+    
+      if (RespAvailable > 0)
+      {
+        DisplayTestOdometrie(BufferResp);
+        
         memset(BufferResp, 0, 64);
         RespBuffIndex = 0;
 
