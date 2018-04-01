@@ -536,7 +536,7 @@ void DisplayTestArretUrgence(char * RespBuff)
 
 void DisplayTestEncodeurs(char * RespBuff)
 {
-  /* RSP:04:02:0000065537:+:2000001024:-
+  /* RSP:04:02:0000065537:+:2000001024:-: 0001040.01:-0001040.01
    * RSP:04:02:0000000000:+:0000000000:-
    */
   RespBuff[3] = '\0';
@@ -546,13 +546,17 @@ void DisplayTestEncodeurs(char * RespBuff)
   RespBuff[22] = '\0';
   RespBuff[33] = '\0';
   RespBuff[35] = '\0';
+  RespBuff[47] = '\0';
+  RespBuff[59] = '\0';
 
   tft.fillScreen(BLACK);
   tft.setCursor(0, 50);
   tft.setTextColor(GREEN);
   tft.setTextSize(4);
   TftPrintf("Left  : %s%s\n", &RespBuff[21], &RespBuff[10]);
+  TftPrintf("      : %s\n",   &RespBuff[36]);
   TftPrintf("Right : %s%s\n", &RespBuff[34], &RespBuff[23]);
+  TftPrintf("      : %s\n",   &RespBuff[48]);
 }
 
 static int RespBuffIndex=0;
@@ -648,7 +652,7 @@ void ActTestEncodeurs(void)
     }
     else
     {
-      RespAvailable = WaitResponse(BufferResp, 11+25);
+      RespAvailable = WaitResponse(BufferResp, 11+25+24);
     
       if (RespAvailable > 0)
       {
@@ -670,25 +674,24 @@ void ActTestEncodeurs(void)
 
 void DisplayTestOdometrie(char * RespBuff)
 {
-  /* RSP:04:07:0000000.01:0001040.01:0000137.24:0000.78345
-   * RSP:04:07:0000.78345:0000137.24:0000000.01:0001040.01
+  /* RSP:04:07: 0000000001:-0001040.01: 0000137.24:-0000.78345
    */
   RespBuff[3] = '\0';
   RespBuff[6] = '\0';
   RespBuff[9] = '\0';
-  RespBuff[20] = '\0';
-  RespBuff[31] = '\0';
-  RespBuff[42] = '\0';
-  RespBuff[53] = '\0';
+  RespBuff[21] = '\0';
+  RespBuff[33] = '\0';
+  RespBuff[45] = '\0';
+  RespBuff[57] = '\0';
 
   tft.fillScreen(BLACK);
   tft.setCursor(0, 50);
   tft.setTextColor(GREEN);
   tft.setTextSize(4);
   TftPrintf("PosX  : %s\n", &RespBuff[10]);
-  TftPrintf("PosY  : %s\n", &RespBuff[21]);
-  TftPrintf("Teta  : %s\n", &RespBuff[32]);
-  TftPrintf("Speed : %s\n", &RespBuff[43]);
+  TftPrintf("PosY  : %s\n", &RespBuff[22]);
+  TftPrintf("Teta  : %s\n", &RespBuff[34]);
+  TftPrintf("Speed : %s\n", &RespBuff[46]);
 }
 
 void ActTestOdometrie(void)
@@ -714,7 +717,7 @@ void ActTestOdometrie(void)
     }
     else
     {
-      RespAvailable = WaitResponse(BufferResp, 11+43);
+      RespAvailable = WaitResponse(BufferResp, 11+47);
     
       if (RespAvailable > 0)
       {
