@@ -838,7 +838,6 @@ void ActTestRotationGauche(void)
 
 void setup(void) {
   Serial.begin(115200);
-  Serial.println(F("TFT LCD test"));
 
 #ifdef USE_ADAFRUIT_SHIELD_PINOUT
 //  Serial.println(F("Using Adafruit 3.5\" TFT Arduino Shield Pinout"));
@@ -846,15 +845,29 @@ void setup(void) {
 //  Serial.println(F("Using Adafruit 3.5\" TFT Breakout Board Pinout"));
 #endif
 
-//  Serial.print("TFT size is "); Serial.print(tft.width()); Serial.print("x"); Serial.println(tft.height());
+  //Serial.print("TFT size is "); Serial.print(tft.width()); Serial.print("x"); Serial.println(tft.height());
 
+  /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+  /* !!! Critical section for LCD interoperability!!! */
+  Serial.println(F("TFT LCD test"));
   tft.reset();
+  delay(100);
 
-  uint16_t identifier=0x9481;
-
+  uint16_t identifier;
+  uint32_t regVal = tft.readReg(0xD3); //tft.readID();
+  if (regVal == 0x00012200)
+  {
+    identifier = 0x9481;
+  } else {
+    identifier = 0x9486;
+  }
+  
   tft.begin(identifier);
+  /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
   tft.setRotation(3);
   tft.fillScreen(BLACK);
+
+  Printf("TFT ID is 0x%X\n",identifier);
 
   pinMode(S5P_SWT_UP, INPUT);
   pinMode(S5P_SWT_DN, INPUT);
