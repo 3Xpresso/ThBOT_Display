@@ -71,6 +71,8 @@ int ValLeft = 1;
 int ValRigh = 1;
 int ValCtr = 1;
 
+
+#define BUFF_RSP_LEN     96
 enum {
   MODE_IDLE,
   MODE_COMPET,
@@ -87,6 +89,10 @@ enum {
   STATE_MOVE_BACKWARD,
   STATE_TURN_RIGTH,
   STATE_TURN_LEFT,
+  STATE_TURN_LEFT_45,
+  STATE_TURN_LEFT_90,
+  STATE_TURN_LEFT_180,
+  STATE_TURN_LEFT_270,
   STATE_ODOM_PARAMS,
 };
 
@@ -146,24 +152,32 @@ const char MarcheAvantText[] PROGMEM = "Marche avant";
 const char MarcheArriereText[] PROGMEM = "Marche arriere";
 const char RotationDroiteText[] PROGMEM = "Rotation a droite";
 const char RotationGaucheText[] PROGMEM = "Rotation a gauche";
+const char RotationGaucheText_45[] PROGMEM = "Rotation a gauche 45";
+const char RotationGaucheText_90[] PROGMEM = "Rotation a gauche 90";
+const char RotationGaucheText_180[] PROGMEM = "Rotation a gauche 180";
+const char RotationGaucheText_270[] PROGMEM = "Rotation a gauche 270";
 
 void ActTestPwmPercentage(void);
 void ActTestMarcheAvant(void);
 void ActTestMarcheArriere(void);
 void ActTestRotationDoite(void);
 void ActTestRotationGauche(void);
+void ActTestRotationGauche_45(void);
+void ActTestRotationGauche_90(void);
+void ActTestRotationGauche_180(void);
+void ActTestRotationGauche_270(void);
 
 const t_Menu st_TestsMoteursMenu PROGMEM = {
   .MenuEntry = {
-    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*0,  PWMPercentText,     BLUE,    WHITE, ActTestPwmPercentage,  NULL},
-    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*1,  MarcheAvantText,    JJCOLOR, WHITE, ActTestMarcheAvant,    NULL},
-    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*2,  MarcheArriereText,  BLUE,    WHITE, ActTestMarcheArriere,  NULL},
-    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*3,  RotationDroiteText, JJCOLOR, WHITE, ActTestRotationDoite,  NULL},
-    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*4,  RotationGaucheText, BLUE,    WHITE, ActTestRotationGauche, NULL},
-    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*5,  EmptyText,          BLACK,   GREEN, NULL,NULL},
-    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*6,  EmptyText,          BLACK,   GREEN, NULL,NULL},
-    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*7,  EmptyText,          BLACK,   GREEN, NULL,NULL},
-    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*8,  EmptyText,          BLACK,   GREEN, NULL,NULL},
+    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*0,  PWMPercentText,         BLUE,    WHITE, ActTestPwmPercentage,      NULL},
+    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*1,  MarcheAvantText,        JJCOLOR, WHITE, ActTestMarcheAvant,        NULL},
+    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*2,  MarcheArriereText,      BLUE,    WHITE, ActTestMarcheArriere,      NULL},
+    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*3,  RotationDroiteText,     JJCOLOR, WHITE, ActTestRotationDoite,      NULL},
+    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*4,  RotationGaucheText,     BLUE,    WHITE, ActTestRotationGauche,     NULL},
+    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*5,  RotationGaucheText_45,  JJCOLOR, WHITE, ActTestRotationGauche_45,  NULL},
+    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*6,  RotationGaucheText_90,  BLUE,    WHITE, ActTestRotationGauche_90,  NULL},
+    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*7,  RotationGaucheText_180, JJCOLOR, WHITE, ActTestRotationGauche_180, NULL},
+    { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*8,  RotationGaucheText_270, BLUE,    WHITE, ActTestRotationGauche_270, NULL},
     { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*9,  EmptyText,          BLACK,   GREEN, NULL,NULL},
     { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*10, EmptyText,          BLACK,   GREEN, NULL,NULL},
     { 0, YPOS_HEADER_OFFSET+YPOS_ENTRY_OFFSET*11, EmptyText,          BLACK,   GREEN, NULL,NULL},
@@ -536,7 +550,9 @@ void DisplayTestArretUrgence(char * RespBuff)
 
 void DisplayTestEncodeurs(char * RespBuff)
 {
-  /* RSP:04:02:0000065537:+:2000001024:-: 0001040.01:-0001040.01
+  /* RSP:04:02:0000065537:+:2000001024:-: 0001040.01:-0001040.01:0000065537:+:2000001024:-
+   * RSP:04:02:0000000000:-:0000000000:-: 0000000.00: 0000000.00:000000000:-:0000000000:-
+   * RSP:04:02:0000000000:-:0000000000:-: 0000000.00: 0000000.00:0000000000:-:0000000000:-
    * RSP:04:02:0000000000:+:0000000000:-
    */
   RespBuff[3] = '\0';
@@ -548,15 +564,24 @@ void DisplayTestEncodeurs(char * RespBuff)
   RespBuff[35] = '\0';
   RespBuff[47] = '\0';
   RespBuff[59] = '\0';
+  RespBuff[70] = '\0';
+  RespBuff[72] = '\0';
+  RespBuff[83] = '\0';
+  RespBuff[85] = '\0';
 
   tft.fillScreen(BLACK);
-  tft.setCursor(0, 50);
+  tft.setCursor(0, 30);
   tft.setTextColor(GREEN);
-  tft.setTextSize(4);
-  TftPrintf("Left  : %s%s\n", &RespBuff[21], &RespBuff[10]);
-  TftPrintf("      : %s\n",   &RespBuff[36]);
-  TftPrintf("Right : %s%s\n", &RespBuff[34], &RespBuff[23]);
-  TftPrintf("      : %s\n",   &RespBuff[48]);
+  tft.setTextSize(3);
+  TftPrintf("Left  : %s%s  step\n", &RespBuff[21], &RespBuff[10]);
+  tft.setTextColor(WHITE);
+  TftPrintf("      :{%s%s} step\n", &RespBuff[71], &RespBuff[60]);
+  TftPrintf("      : %s  mm\n",   &RespBuff[36]);
+  tft.setTextColor(GREEN);
+  TftPrintf("Right : %s%s  step\n", &RespBuff[34], &RespBuff[23]);
+  tft.setTextColor(WHITE);
+  TftPrintf("      :{%s%s} step\n", &RespBuff[84], &RespBuff[73]);
+  TftPrintf("      : %s  mm\n",   &RespBuff[48]);
 }
 
 static int RespBuffIndex=0;
@@ -594,21 +619,25 @@ int WaitResponse(char * RespBuff, int RespLen)
           RespBuffIndex -= RespBuffOffset;
         }
       }
+      //Printf("Search RSP : %s\n", RespBuff);
     }
   }
 
   if (RespBuffIndex >= (RespLen-1))
     return 1;
   else
+  {
+    //Printf("JPB: %i - %i \n", RespBuffIndex, RespLen-1);
     return 0;
+  }
 }
 
 void ActTestArretUrgence(void)
 {
-  char BufferResp[64];
+  char BufferResp[BUFF_RSP_LEN];
   int  RespAvailable;
 
-  memset(BufferResp, 0, 64);
+  memset(BufferResp, 0, BUFF_RSP_LEN);
   RespBuffIndex = 0;
   
   Printf("CMD:%2.2d:%2.2d\n", MODE_TESTS, STATE_GET_PWR_STATE);
@@ -631,11 +660,11 @@ void ActTestArretUrgence(void)
 
 void ActTestEncodeurs(void)
 {
-  char BufferResp[64];
+  char BufferResp[BUFF_RSP_LEN];
   int  RespAvailable;
   uint16_t u16_SleepLoop = 1;
 
-  memset(BufferResp, 0, 64);
+  memset(BufferResp, 0, BUFF_RSP_LEN);
   RespBuffIndex = 0;
   
   tft.fillScreen(BLACK);
@@ -652,13 +681,13 @@ void ActTestEncodeurs(void)
     }
     else
     {
-      RespAvailable = WaitResponse(BufferResp, 11+25+24);
+      RespAvailable = WaitResponse(BufferResp, 11+25+24+1+25);
     
       if (RespAvailable > 0)
       {
         DisplayTestEncodeurs(BufferResp);
 
-        memset(BufferResp, 0, 64);
+        memset(BufferResp, 0, BUFF_RSP_LEN);
         RespBuffIndex = 0;
 
         /* Wait 2s before requesting a new read */
@@ -696,11 +725,11 @@ void DisplayTestOdometrie(char * RespBuff)
 
 void ActTestOdometrie(void)
 {
-  char BufferResp[64];
+  char BufferResp[BUFF_RSP_LEN];
   int  RespAvailable;
   uint16_t u16_SleepLoop = 1;
 
-  memset(BufferResp, 0, 64);
+  memset(BufferResp, 0, BUFF_RSP_LEN);
   RespBuffIndex = 0;
   
   tft.fillScreen(BLACK);
@@ -723,7 +752,7 @@ void ActTestOdometrie(void)
       {
         DisplayTestOdometrie(BufferResp);
         
-        memset(BufferResp, 0, 64);
+        memset(BufferResp, 0, BUFF_RSP_LEN);
         RespBuffIndex = 0;
 
         /* Wait 2s before requesting a new read */
@@ -836,8 +865,29 @@ void ActTestRotationGauche(void)
   Printf("CMD:%2.2d:%2.2d\n", MODE_TESTS, STATE_TURN_LEFT);
 }
 
+void ActTestRotationGauche_45(void)
+{
+  Printf("CMD:%2.2d:%2.2d\n", MODE_TESTS, STATE_TURN_LEFT_45);
+}
+
+void ActTestRotationGauche_90(void)
+{
+  Printf("CMD:%2.2d:%2.2d\n", MODE_TESTS, STATE_TURN_LEFT_90);
+}
+
+void ActTestRotationGauche_180(void)
+{
+  Printf("CMD:%2.2d:%2.2d\n", MODE_TESTS, STATE_TURN_LEFT_180);
+}
+
+void ActTestRotationGauche_270(void)
+{
+  Printf("CMD:%2.2d:%2.2d\n", MODE_TESTS, STATE_TURN_LEFT_270);
+}
+
 void setup(void) {
   Serial.begin(115200);
+  //Serial.println(F("TFT LCD test"));
 
 #ifdef USE_ADAFRUIT_SHIELD_PINOUT
 //  Serial.println(F("Using Adafruit 3.5\" TFT Arduino Shield Pinout"));
@@ -883,6 +933,11 @@ void setup(void) {
   
   DisplayMenu();
   SendModeIdle();
+
+  regVal = tft.readReg(0x54);
+  Serial.println(regVal, HEX);
+
+  tft.writeRegister8JP(0x53, 0x04);
 }
 
 char Buffer[64];
@@ -908,10 +963,16 @@ void loop(void) {
     {
       case KEY_UP:
       {
+        //tft.writeRegister8JP(0x10, 0x00);
+        uint32_t regVal = tft.readReg(0xC8);
+        Serial.println(regVal, HEX);
+        tft.writeRegister8JP(0x53, 0xFF);
         UpdateSelectENtry(-1);
       }break;
       case KEY_DOWN:
       {
+        tft.writeRegister8JP(0x11, 0x00);
+        //tft.writeRegister8JP(0x53, 0x00);
         UpdateSelectENtry(1);
       }break;
       case KEY_RIGHT:
